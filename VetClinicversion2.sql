@@ -829,11 +829,189 @@ BEGIN
     END
 END
 GO
-PRINT N'Creating Trigger [dbo].[TRIGGER_ALL_VaccinationSchedule]...';
+PRINT N'Creating Trigger [dbo].[TRIGGER_ALL_Appointments]...';
+
 
 
 GO
+CREATE TRIGGER TRIGGER_ALL_Appointments ON Appointments
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+   SET NOCOUNT ON;
+   DECLARE @Action VARCHAR(20);
+   IF EXISTS (SELECT 1 FROM inserted) AND EXISTS (SELECT 1 FROM deleted)
+       SET @Action = 'UPDATE';
+   ELSE IF EXISTS (SELECT 1 FROM inserted)
+       SET @Action = 'INSERT';
+   ELSE
+       SET @Action = 'DELETE';
 
+
+   IF @Action = 'INSERT'
+   BEGIN
+       INSERT INTO AuditLog (table_name, operation_type, record_id, new_value)
+       SELECT 'Appointments', 'INSERT', appointment_id,
+              CONCAT('Appointment_Date: ', appointment_date, '; Appointment_Time: ', appointment_time, '; Reason: ', reason,
+                     '; Status: ', status, '; Client_Id: ', client_id, '; Pet_Id: ', pet_id, '; Staff_Id: ', staff_id)
+       FROM inserted;
+   END
+
+
+   IF @Action = 'UPDATE'
+   BEGIN
+       IF UPDATE(appointment_date)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Appointment_Date', d.appointment_date, i.appointment_date
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.appointment_date <> i.appointment_date;
+
+
+       IF UPDATE(appointment_time)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Appointment_Time', d.appointment_time, i.appointment_time
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.appointment_time <> i.appointment_time;
+
+
+       IF UPDATE(reason)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+          SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Reason', d.reason, i.reason
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.reason <> i.reason;
+
+
+       IF UPDATE(status)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Status', d.status, i.status
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.status <> i.status;
+
+
+       IF UPDATE(client_id)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Client_Id', d.client_id, i.client_id
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.client_id <> i.client_id;
+
+
+       IF UPDATE(pet_id)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Pet_Id', d.pet_id, i.pet_id
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.pet_id <> i.pet_id;
+
+
+       IF UPDATE(staff_id)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Appointments', 'UPDATE', i.appointment_id, 'Staff_Id', d.staff_id, i.staff_id
+           FROM deleted d JOIN inserted i ON d.appointment_id = i.appointment_id
+           WHERE d.staff_id <> i.staff_id;
+   END
+
+
+   IF @Action = 'DELETE'
+   BEGIN
+       INSERT INTO AuditLog (table_name, operation_type, record_id, new_value)
+       SELECT 'Appointments', 'DELETE', appointment_id,
+              CONCAT('Appointment_Date: ', appointment_date, '; Appointment_Time: ', appointment_time, '; Reason: ', reason,
+                     '; Status: ', status, '; Client_Id: ', client_id, '; Pet_Id: ', pet_id, '; Staff_Id: ', staff_id)
+       FROM deleted;
+   END
+END
+GO
+PRINT N'Creating Trigger [dbo].[TRIGGER_ALL_Medical_Records]...';
+
+
+
+GO
+CREATE TRIGGER TRIGGER_ALL_Medical_Records ON Medical_Records
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+   SET NOCOUNT ON;
+   DECLARE @Action VARCHAR(20);
+   IF EXISTS (SELECT 1 FROM inserted) AND EXISTS (SELECT 1 FROM deleted)
+       SET @Action = 'UPDATE';
+   ELSE IF EXISTS (SELECT 1 FROM inserted)
+       SET @Action = 'INSERT';
+   ELSE
+       SET @Action = 'DELETE';
+
+
+   IF @Action = 'INSERT'
+   BEGIN
+       INSERT INTO AuditLog (table_name, operation_type, record_id, new_value)
+       SELECT 'Medical_Records', 'INSERT', record_id,
+              CONCAT('Visit_Date: ', visit_date, '; Diagnosis: ', ISNULL(diagnosis,''), '; Weight_Kg: ', weight_kg,
+                     '; Notes: ', ISNULL(notes,''), '; Created_At: ', created_at, '; Pet_Id: ', pet_id, '; Staff_Id: ', staff_id)
+       FROM inserted;
+   END
+
+
+   IF @Action = 'UPDATE'
+   BEGIN
+       IF UPDATE(visit_date)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Visit_Date', d.visit_date, i.visit_date
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE d.visit_date <> i.visit_date;
+
+
+       IF UPDATE(diagnosis)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Diagnosis', d.diagnosis, i.diagnosis
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE ISNULL(d.diagnosis,'') <> ISNULL(i.diagnosis,'');
+
+
+       IF UPDATE(weight_kg)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Weight_Kg', d.weight_kg, i.weight_kg
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE d.weight_kg <> i.weight_kg;
+
+
+       IF UPDATE(notes)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Notes', d.notes, i.notes
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE ISNULL(d.notes,'') <> ISNULL(i.notes,'');
+
+
+       IF UPDATE(created_at)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Created_At', d.created_at, i.created_at
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE d.created_at <> i.created_at;
+          IF UPDATE(pet_id)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Pet_Id', d.pet_id, i.pet_id
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE d.pet_id <> i.pet_id;
+
+
+       IF UPDATE(staff_id)
+           INSERT INTO AuditLog (table_name, operation_type, record_id, column_changed, old_value, new_value)
+           SELECT 'Medical_Records', 'UPDATE', i.record_id, 'Staff_Id', d.staff_id, i.staff_id
+           FROM deleted d JOIN inserted i ON d.record_id = i.record_id
+           WHERE d.staff_id <> i.staff_id;
+   END
+
+
+   IF @Action = 'DELETE'
+   BEGIN
+       INSERT INTO AuditLog (table_name, operation_type, record_id, new_value)
+       SELECT 'Medical_Records', 'DELETE', record_id,
+              CONCAT('Visit_Date: ', visit_date, '; Diagnosis: ', ISNULL(diagnosis,''), '; Weight_Kg: ', weight_kg,
+                     '; Notes: ', ISNULL(notes,''), '; Created_At: ', created_at, '; Pet_Id: ', pet_id, '; Staff_Id: ', staff_id)
+       FROM deleted;
+   END
+END
+GO
+PRINT N'Creating Trigger [dbo].[TRIGGER_ALL_VaccinationSchedule]...';
+
+GO
 CREATE TRIGGER TRIGGER_ALL_VaccinationSchedule ON Vaccination_Schedule
 AFTER INSERT, UPDATE, DELETE
 AS
@@ -1643,6 +1821,17 @@ END
 GO
 PRINT N'Creating Procedure [dbo].[uspInsertClientsPets]...';
 
+
+GO
+CREATE TYPE PetList AS TABLE
+(
+   PetName    VARCHAR(50),
+   PetSpecies VARCHAR(50),
+   PetBreed   VARCHAR(50) NULL,
+   PetGender  CHAR(1),
+   PetDOB     DATE
+);
+GO
 
 GO
 CREATE PROC uspInsertClientsPets
